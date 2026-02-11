@@ -1,8 +1,3 @@
---- Roku Script - ULTIMATE PVP EDITION
--- description Complete PVP cheat suite with God Mode, Aimbot, ESP+, Fly, and server disruption
--- features Godmode, Silent Aim, Auto-Farm, Full Movement Suite, Visuals, Exploits
-
--- Services:
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -14,320 +9,584 @@ local TweenService = game:GetService("TweenService")
 local localPlayer = Players.LocalPlayer
 local mouse = localPlayer:GetMouse()
 local camera = Workspace.CurrentCamera
+local playerGui = localPlayer:WaitForChild("PlayerGui")
 
--- Configuration:
-local Config = {
-    -- Original movement
-    InfiniteJump = false, IsFlying = false, Noclip = false, ESP = false, ClickTeleport = false,
-    
-    -- PVP Features
-    GodMode = false,
-    Aimbot = false,
-    TriggerBot = false,
-    AutoFire = false,
-    AntiAim = false,
-    AutoFarm = false,
-    
-    -- Exploits (previous)
-    MassDrop = false, ScreenDeface = false, SpamChat = false, ParticleSpam = false,
-    
-    FlySpeed = 100, WalkSpeed = 16, DropSpeed = 50, SpamRate = 0.1,
-    
-    -- Aimbot Settings
-    AimFOV = 200,
-    AimSmoothness = 0.1,
-    TargetHead = true,
-    TeamCheck = false,
-    WallCheck = false,
-    
-    Keybinds = {
-        ToggleFly = Enum.KeyCode.F,
-        ToggleNoclip = Enum.KeyCode.V,
-        ToggleAimbot = Enum.KeyCode.X,
-    }
+-- // Configuration & Theme // --
+local ToggleKey = Enum.KeyCode.RightControl 
+local Theme = {
+	Background = Color3.fromRGB(15, 15, 15),
+	SectionBackground = Color3.fromRGB(22, 22, 22),
+	Text = Color3.fromRGB(210, 210, 210),
+	TextWhite = Color3.fromRGB(255, 255, 255),
+	Accent = Color3.fromRGB(255, 230, 0),
+	Button = Color3.fromRGB(28, 28, 28),
+	SelectedTab = Color3.fromRGB(35, 35, 35),
+	ToggleOn = Color3.fromRGB(0, 255, 0),
+	ToggleOff = Color3.fromRGB(255, 0, 0)
 }
 
--- Variables
-local espElements = {}
-local flyVelocity = nil
-local noclipConnection = nil
-local clickTpConnection = nil
-local massDropConnection = nil
-local screenDefaceConnection = nil
-local aimbotConnection = nil
-local godConnection = nil
-local closestTarget = nil
+-- // Cheat Variables // --
+local GodMode = false
+local AimbotEnabled = false
+local ESPEnabled = false
+local FlyEnabled = false
+local SpeedEnabled = false
+local NoclipEnabled = false
+local FlySpeed = 50
+local Connections = {}
 
--- FOV Circle for Aimbot
-local fovCircle = Drawing.new("Circle")
-fovCircle.Visible = false
-fovCircle.Radius = Config.AimFOV
-fovCircle.Color = Color3.fromRGB(255, 0, 0)
-fovCircle.Thickness = 2
-fovCircle.Filled = false
-fovCircle.Transparency = 0.8
+-- // Create Main GUI // --
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "NexusV_Yellow"
+ScreenGui.Parent = playerGui
+ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 999999
 
--- UI Setup
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Window = Rayfield:CreateWindow({
-    Name = "Roku Script - PVP ULTIMATE",
-    LoadingSubtitle = "God Mode + Aimbot Loaded",
-    ConfigurationSaving = { Enabled = true, FileName = "RokuPVP" }
-})
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 850, 0, 500)
+MainFrame.Position = UDim2.new(0.5, -425, 0.5, -250)
+MainFrame.BackgroundColor3 = Theme.Background
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+MainFrame.Visible = false
 
-Rayfield:Notify({Title = "PVP SUITE LOADED", Content = "Godmode, Aimbot, ESP+ Active!", Duration = 8})
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 6)
+MainCorner.Parent = MainFrame
 
--- CORE FEATURES (Previous unchanged - abbreviated for space)
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Theme.Accent
+MainStroke.Thickness = 1.5
+MainStroke.Parent = MainFrame
 
-local function setupCharacter(character)
-    pcall(function()
-        local humanoid = character:WaitForChild("Humanoid")
-        humanoid.WalkSpeed = Config.WalkSpeed
-        humanoid.JumpPower = 50
-        
-        humanoid.StateChanged:Connect(function(_, newState)
-            if newState == Enum.HumanoidStateType.Jumping and Config.InfiniteJump then
-                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
-        end)
-    end)
+local TopLine = Instance.new("Frame")
+TopLine.Size = UDim2.new(1, 0, 0, 3)
+TopLine.BackgroundColor3 = Theme.Accent
+TopLine.BorderSizePixel = 0
+TopLine.ZIndex = 10
+TopLine.Parent = MainFrame
+
+-- // Sidebar // --
+local Sidebar = Instance.new("Frame")
+Sidebar.Size = UDim2.new(0, 200, 1, -3)
+Sidebar.Position = UDim2.new(0, 0, 0, 3)
+Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Sidebar.BackgroundTransparency = 0.1
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = MainFrame
+
+local SidebarCorner = Instance.new("UICorner")
+SidebarCorner.CornerRadius = UDim.new(0, 6)
+SidebarCorner.Parent = Sidebar
+
+local Title = Instance.new("TextLabel")
+Title.Text = "Nexus V"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 28
+Title.TextColor3 = Theme.Accent
+Title.Size = UDim2.new(1, -20, 0, 60)
+Title.Position = UDim2.new(0, 20, 0, 15)
+Title.BackgroundTransparency = 1
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 10
+Title.Parent = Sidebar
+
+local TabContainer = Instance.new("Frame")
+TabContainer.Size = UDim2.new(1, 0, 1, -90)
+TabContainer.Position = UDim2.new(0, 0, 0, 85)
+TabContainer.BackgroundTransparency = 1
+TabContainer.Parent = Sidebar
+
+local TabListLayout = Instance.new("UIListLayout")
+TabListLayout.Padding = UDim.new(0, 8)
+TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabListLayout.Parent = TabContainer
+
+-- // Content Areas // --
+local MiddlePanel = Instance.new("ScrollingFrame")
+MiddlePanel.Name = "MiddlePanel"
+MiddlePanel.Size = UDim2.new(0, 320, 1, -30)
+MiddlePanel.Position = UDim2.new(0, 210, 0, 15)
+MiddlePanel.BackgroundColor3 = Theme.SectionBackground
+MiddlePanel.BorderSizePixel = 0
+MiddlePanel.ScrollBarThickness = 4
+MiddlePanel.ScrollBarImageColor3 = Theme.Accent
+MiddlePanel.CanvasSize = UDim2.new(0,0,0,0)
+MiddlePanel.ScrollBarImageTransparency = 0.5
+MiddlePanel.Visible = false
+MiddlePanel.Parent = MainFrame
+
+local MiddleCorner = Instance.new("UICorner")
+MiddleCorner.CornerRadius = UDim.new(0, 6)
+MiddleCorner.Parent = MiddlePanel
+
+local MiddleLayout = Instance.new("UIListLayout")
+MiddleLayout.Padding = UDim.new(0, 10)
+MiddleLayout.SortOrder = Enum.SortOrder.LayoutOrder
+MiddleLayout.Parent = MiddlePanel
+
+local RightPanel = Instance.new("ScrollingFrame")
+RightPanel.Name = "RightPanel"
+RightPanel.Size = UDim2.new(0, 300, 1, -30)
+RightPanel.Position = UDim2.new(1, -310, 0, 15)
+RightPanel.BackgroundColor3 = Theme.SectionBackground
+RightPanel.BorderSizePixel = 0
+RightPanel.ScrollBarThickness = 4
+RightPanel.ScrollBarImageColor3 = Theme.Accent
+RightPanel.CanvasSize = UDim2.new(0,0,0,0)
+RightPanel.ScrollBarImageTransparency = 0.5
+RightPanel.Visible = false
+RightPanel.Parent = MainFrame
+
+local RightCorner = Instance.new("UICorner")
+RightCorner.CornerRadius = UDim.new(0, 6)
+RightCorner.Parent = RightPanel
+
+local RightLayout = Instance.new("UIListLayout")
+RightLayout.Padding = UDim.new(0, 10)
+RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
+RightLayout.Parent = RightPanel
+
+-- // Tab System // --
+local ActiveTab = nil
+local Tabs = {}
+
+local function UpdateCanvasSize()
+	MiddlePanel.CanvasSize = UDim2.new(0, 0, 0, MiddleLayout.AbsoluteContentSize.Y + 30)
+	RightPanel.CanvasSize = UDim2.new(0, 0, 0, RightLayout.AbsoluteContentSize.Y + 30)
 end
 
--- GOD MODE - Complete Invincibility
-local function setGodMode(enabled)
-    Config.GodMode = enabled
-    if enabled then
-        godConnection = RunService.Stepped:Connect(function()
-            if not localPlayer.Character or not Config.GodMode then return end
-            pcall(function()
-                local humanoid = localPlayer.Character:FindFirstChild("Humanoid")
-                local rootPart = localPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if humanoid then
-                    humanoid.Health = 100
-                    humanoid.MaxHealth = 100
-                end
-                if rootPart then
-                    rootPart.CanCollide = false
-                end
-                for _, part in ipairs(localPlayer.Character:GetChildren()) do
-                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                        part.CanCollide = false
-                    end
-                end
-            end)
-        end)
-    else
-        if godConnection then
-            godConnection:Disconnect()
-            godConnection = nil
-        end
-    end
-    Rayfield:Notify({Title = "God Mode", Content = enabled and "INVINCIBLE" or "Disabled", Duration = 3})
+local function CreateTab(text, layoutOrder)
+	local TabBtn = Instance.new("TextButton")
+	TabBtn.Size = UDim2.new(1, -20, 0, 50)
+	TabBtn.BackgroundTransparency = 1
+	TabBtn.Text = ""
+	TabBtn.LayoutOrder = layoutOrder
+	TabBtn.Parent = TabContainer
+
+	local Indicator = Instance.new("Frame")
+	Indicator.Size = UDim2.new(0, 4, 0.75, 0)
+	Indicator.Position = UDim2.new(0, 8, 0.125, 0)
+	Indicator.BackgroundColor3 = Theme.Accent
+	Indicator.BackgroundTransparency = 1
+	Indicator.BorderSizePixel = 0
+	Indicator.Parent = TabBtn
+
+	local Icon = Instance.new("ImageLabel")
+	Icon.Size = UDim2.new(0, 24, 0, 24)
+	Icon.Position = UDim2.new(0, 18, 0.5, -12)
+	Icon.BackgroundTransparency = 1
+	Icon.Image = "rbxassetid://3926305904"
+	Icon.ImageColor3 = Theme.Accent
+	Icon.ImageRectOffset = Vector2.new(964, 204)
+	Icon.ImageRectSize = Vector2.new(36, 36)
+	Icon.Parent = TabBtn
+
+	local Label = Instance.new("TextLabel")
+	Label.Text = text
+	Label.Font = Enum.Font.GothamMedium
+	Label.TextSize = 15
+	Label.TextColor3 = Theme.Text
+	Label.Size = UDim2.new(1, -55, 1, 0)
+	Label.Position = UDim2.new(0, 50, 0, 0)
+	Label.BackgroundTransparency = 1
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextYAlignment = Enum.TextYAlignment.Center
+	Label.Parent = TabBtn
+
+	local tabData = {
+		Button = TabBtn,
+		Label = Label,
+		Indicator = Indicator,
+		MiddleContent = {},
+		RightContent = {}
+	}
+	
+	Tabs[#Tabs + 1] = tabData
+	
+	TabBtn.MouseButton1Click:Connect(function()
+		-- Reset all tabs
+		for _, tab in pairs(Tabs) do
+			tab.Button.BackgroundTransparency = 1
+			tab.Label.TextColor3 = Theme.Text
+			tab.Indicator.BackgroundTransparency = 1
+		end
+		
+		-- Activate current tab
+		TabBtn.BackgroundTransparency = 0.7
+		TabBtn.BackgroundColor3 = Theme.SelectedTab
+		Label.TextColor3 = Theme.TextWhite
+		Indicator.BackgroundTransparency = 0
+		ActiveTab = tabData
+		
+		-- Clear panels
+		MiddlePanel.Visible = false
+		RightPanel.Visible = false
+		
+		-- Clear previous content
+		for _, content in pairs(tabData.MiddleContent) do
+			if content and content.Parent then content:Destroy() end
+		end
+		for _, content in pairs(tabData.RightContent) do
+			if content and content.Parent then content:Destroy() end
+		end
+		tabData.MiddleContent = {}
+		tabData.RightContent = {}
+		
+		-- Create new content
+		CreateTabContent(text)
+		
+		-- Show panels
+		MiddlePanel.Visible = true
+		RightPanel.Visible = true
+		
+		task.wait()
+		UpdateCanvasSize()
+	end)
 end
 
--- ADVANCED AIMBOT w/ Prediction & Silent Aim
-local function getClosestTarget()
-    local closest, shortest = nil, Config.AimFOV
-    local mousePos = Vector2.new(mouse.X, mouse.Y)
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            if Config.TeamCheck and player.Team == localPlayer.Team then continue end
-            
-            local rootPart = player.Character.HumanoidRootPart
-            local humanoid = player.Character:FindFirstChild("Humanoid")
-            if not humanoid or humanoid.Health <= 0 then continue end
-            
-            local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
-            if not onScreen then continue end
-            
-            local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-            if distance < shortest then
-                closest = rootPart
-                shortest = distance
-            end
-        end
-    end
-    return closest
+-- // UI Components // --
+local function CreateToggle(text, callback)
+	local ToggleFrame = Instance.new("Frame")
+	ToggleFrame.Size = UDim2.new(1, -20, 0, 45)
+	ToggleFrame.BackgroundTransparency = 1
+	ToggleFrame.LayoutOrder = #ActiveTab.MiddleContent + 1
+	ToggleFrame.Parent = MiddlePanel
+	
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(0.72, 0, 1, 0)
+	Label.BackgroundTransparency = 1
+	Label.Text = "  " .. text
+	Label.TextColor3 = Theme.TextWhite
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Font = Enum.Font.GothamSemibold
+	Label.TextSize = 15
+	Label.TextYAlignment = Enum.TextYAlignment.Center
+	Label.Parent = ToggleFrame
+	
+	local ToggleBtn = Instance.new("TextButton")
+	ToggleBtn.Size = UDim2.new(0, 55, 0, 28)
+	ToggleBtn.Position = UDim2.new(1, -60, 0.5, -14)
+	ToggleBtn.BackgroundColor3 = Theme.ToggleOff
+	ToggleBtn.Text = "OFF"
+	ToggleBtn.Font = Enum.Font.GothamBold
+	ToggleBtn.TextSize = 13
+	ToggleBtn.TextColor3 = Color3.new(1,1,1)
+	ToggleBtn.Parent = ToggleFrame
+	
+	local ToggleCorner = Instance.new("UICorner")
+	ToggleCorner.CornerRadius = UDim.new(0, 14)
+	ToggleCorner.Parent = ToggleBtn
+	
+	local ToggleStroke = Instance.new("UIStroke")
+	ToggleStroke.Color = Theme.Accent
+	ToggleStroke.Thickness = 1.2
+	ToggleStroke.Parent = ToggleBtn
+	
+	ToggleBtn.MouseButton1Click:Connect(function()
+		local state = ToggleBtn.Text == "OFF"
+		ToggleBtn.Text = state and "ON" or "OFF"
+		ToggleBtn.BackgroundColor3 = state and Theme.ToggleOn or Theme.ToggleOff
+		callback(state)
+	end)
+	
+	ActiveTab.MiddleContent[#ActiveTab.MiddleContent + 1] = ToggleFrame
+	return ToggleFrame
 end
 
-local function setAimbot(enabled)
-    Config.Aimbot = enabled
-    fovCircle.Visible = enabled
-    
-    if enabled then
-        aimbotConnection = RunService.RenderStepped:Connect(function()
-            closestTarget = getClosestTarget()
-            fovCircle.Position = Vector2.new(mouse.X, mouse.Y)
-            
-            if closestTarget and Config.Aimbot then
-                local targetPos = Config.TargetHead and closestTarget.Parent:FindFirstChild("Head") or closestTarget
-                if targetPos then
-                    local screenPos, onScreen = camera:WorldToScreenPoint(targetPos.Position)
-                    if onScreen then
-                        -- Silent aim - Hook mouse hit
-                        mousemoverel(
-                            (screenPos.X - mouse.X) * Config.AimSmoothness,
-                            (screenPos.Y - mouse.Y) * Config.AimSmoothness
-                        )
-                    end
-                end
-            end
-        end)
-    else
-        if aimbotConnection then
-            aimbotConnection:Disconnect()
-            aimbotConnection = nil
-        end
-    end
-    Rayfield:Notify({Title = "Aimbot", Content = enabled and "LOCKED ON" or "Disabled", Duration = 3})
+local function CreateButton(text, callback, panel)
+	local Btn = Instance.new("TextButton")
+	Btn.Size = UDim2.new(1, -20, 0, 50)
+	Btn.BackgroundColor3 = Theme.Button
+	Btn.Text = text
+	Btn.Font = Enum.Font.GothamSemibold
+	Btn.TextSize = 15
+	Btn.TextColor3 = Theme.TextWhite
+	Btn.TextYAlignment = Enum.TextYAlignment.Center
+	Btn.Parent = panel
+	
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 8)
+	Corner.Parent = Btn
+	
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Color = Theme.Accent
+	Stroke.Thickness = 1.5
+	Stroke.Parent = Btn
+	
+	Btn.MouseEnter:Connect(function()
+		TweenService:Create(Btn, TweenInfo.new(0.15), {
+			BackgroundColor3 = Color3.fromRGB(55, 55, 55),
+			Rotation = 0.5
+		}):Play()
+	end)
+	
+	Btn.MouseLeave:Connect(function()
+		TweenService:Create(Btn, TweenInfo.new(0.15), {
+			BackgroundColor3 = Theme.Button,
+			Rotation = 0
+		}):Play()
+	end)
+	
+	Btn.MouseButton1Click:Connect(function()
+		TweenService:Create(Btn, TweenInfo.new(0.1), {Size = UDim2.new(1, -25, 0, 48)}):Play()
+		task.wait(0.1)
+		TweenService:Create(Btn, TweenInfo.new(0.1), {Size = UDim2.new(1, -20, 0, 50)}):Play()
+		callback()
+	end)
+	
+	if panel == MiddlePanel then
+		ActiveTab.MiddleContent[#ActiveTab.MiddleContent + 1] = Btn
+	else
+		ActiveTab.RightContent[#ActiveTab.RightContent + 1] = Btn
+	end
 end
 
--- TRIGGER BOT - Auto fire at enemies
-local function setTriggerBot(enabled)
-    Config.TriggerBot = enabled
-    if enabled then
-        local triggerConnection
-        triggerConnection = mouse.Button1Down:Connect(function()
-            if not Config.TriggerBot or not closestTarget then return end
-            -- Auto fire weapons/tools
-            local tool = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Tool")
-            if tool then
-                tool:Activate()
-            end
-            -- Remote event firing for guns
-            pcall(function()
-                ReplicatedStorage:FindFirstChild("RemoteEvent"):FireServer("Shoot", closestTarget)
-            end)
-        end)
-        table.insert(spamConnections, triggerConnection)
-    end
-    Rayfield:Notify({Title = "Trigger Bot", Content = enabled and "Auto-Firing" or "Disabled", Duration = 3})
+-- // Tab Content Creator // --
+function CreateTabContent(tabName)
+	if tabName == "Combat" then
+		CreateToggle("PVP Aimbot", function(state) AimbotEnabled = state end)
+		CreateToggle("Kill Aura", function(state)
+			if Connections.KillAura then Connections.KillAura:Disconnect() end
+			if state then
+				Connections.KillAura = RunService.Heartbeat:Connect(function()
+					if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+						for _, player in pairs(Players:GetPlayers()) do
+							if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+								local distance = (localPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+								if distance < 25 then
+									fireclickdetector(player.Character.HumanoidRootPart:FindFirstChildOfClass("ClickDetector"))
+								end
+							end
+						end
+					end
+				end)
+			end
+		end)
+		CreateButton("💥 Explode Nearest", function()
+			local nearest, shortest = nil, math.huge
+			for _, player in pairs(Players:GetPlayers()) do
+				if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+					local dist = (localPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+					if dist < shortest then shortest, nearest = dist, player end
+				end
+			end
+			if nearest and nearest.Character then
+				local explosion = Instance.new("Explosion")
+				explosion.Position = nearest.Character.HumanoidRootPart.Position
+				explosion.Parent = Workspace
+			end
+		end, RightPanel)
+		
+	elseif tabName == "Self" then
+		CreateToggle("Godmode", function(state) GodMode = state end)
+		CreateToggle("Fly (WASD)", function(state) FlyEnabled = state end)
+		CreateToggle("Speed 100", function(state) SpeedEnabled = state end)
+		CreateToggle("Noclip", function(state) NoclipEnabled = state end)
+		CreateButton("🔄 Respawn", function()
+			if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
+				localPlayer.Character.Humanoid.Health = 0
+			end
+		end, RightPanel)
+		
+	elseif tabName == "Player Trolls" then
+		CreateButton("✈️ FLY All Players", function()
+			for _, player in pairs(Players:GetPlayers()) do
+				if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+					player.Character.Humanoid.PlatformStand = true
+				end
+			end
+		end)
+		CreateButton("💣 Explode ALL", function()
+			for _, player in pairs(Players:GetPlayers()) do
+				if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+					local explosion = Instance.new("Explosion")
+					explosion.Position = player.Character.HumanoidRootPart.Position
+					explosion.Parent = Workspace
+				end
+			end
+		end, RightPanel)
+		CreateButton("🐌 Lag Server", function()
+			for i = 1, 75 do
+				local part = Instance.new("Part")
+				part.Size = Vector3.new(4, 4, 4)
+				part.Position = Vector3.new(math.random(-200,200), math.random(50,200), math.random(-200,200))
+				part.Anchored = true
+				part.Parent = Workspace
+			end
+		end, RightPanel)
+		
+	elseif tabName == "Server" then
+		CreateButton("🔄 Rejoin", function()
+			game:GetService("TeleportService"):Teleport(game.PlaceId, localPlayer)
+		end)
+		CreateButton("💥 Crash", function()
+			while task.wait() do
+				local part = Instance.new("Part")
+				part.Parent = Workspace
+			end
+		end, RightPanel)
+		
+	elseif tabName == "ESP" then
+		CreateToggle("Player ESP", function(state)
+			ESPEnabled = state
+			if state then
+				for _, player in pairs(Players:GetPlayers()) do
+					if player ~= localPlayer and player.Character then
+						local highlight = Instance.new("Highlight")
+						highlight.FillColor = Color3.fromRGB(255, 0, 0)
+						highlight.OutlineColor = Theme.Accent
+						highlight.FillTransparency = 0.4
+						highlight.Parent = player.Character
+					end
+				end
+			else
+				for _, player in pairs(Players:GetPlayers()) do
+					if player.Character then
+						local highlight = player.Character:FindFirstChildOfClass("Highlight")
+						if highlight then highlight:Destroy() end
+					end
+				end
+			end
+		end)
+		
+	elseif tabName == "Misc" then
+		CreateButton("📦 Infinite Yield", function()
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+		end)
+		CreateButton("🔗 Copy Link", function()
+			setclipboard("roblox://placeid=" .. game.PlaceId)
+		end, RightPanel)
+	end
 end
 
--- ENHANCED ESP w/ Distance, Health, Weapon
-local function setESP(enabled)
-    Config.ESP = enabled
-    fovCircle.Visible = Config.Aimbot
-    if not enabled then
-        for player, elements in pairs(espElements) do
-            if elements.Billboard then elements.Billboard:Destroy() end
-            if elements.Tracer then elements.Tracer:Destroy() end
-        end
-        espElements = {}
-    end
+-- Create all tabs
+local TabNames = {"Combat", "Self", "Player Trolls", "Server", "ESP", "Misc"}
+for i, name in ipairs(TabNames) do
+	CreateTab(name, i)
 end
 
--- AUTO FARM / Kill Aura
-local function setAutoFarm(enabled)
-    Config.AutoFarm = enabled
-    if enabled then
-        local farmConnection = RunService.Heartbeat:Connect(function()
-            if not Config.AutoFarm then return end
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local distance = (localPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                    if distance < 50 then
-                        -- Kill aura damage
-                        pcall(function()
-                            ReplicatedStorage:FindFirstChild("DamageRemote"):FireServer(player.Character.Humanoid)
-                        end)
-                    end
-                end
-            end
-        end)
-        table.insert(spamConnections, farmConnection)
-    end
-    Rayfield:Notify({Title = "Kill Aura", Content = enabled and "Farming everyone" or "Disabled", Duration = 3})
-end
-
--- Previous exploit functions (MassDrop, ScreenDeface, etc. - unchanged)
-
--- UI TABS - Complete PVP Suite
-
--- PVP Tab
-local PVPTab = Window:CreateTab("⚔️ PVP")
-local CombatSection = PVPTab:CreateSection("Combat")
-CombatSection:CreateToggle({Name = "God Mode", CurrentValue = false, Callback = setGodMode})
-CombatSection:CreateToggle({Name = "Kill Aura (AutoFarm)", CurrentValue = false, Callback = setAutoFarm})
-
-local AimSection = PVPTab:CreateSection("Aimbot")
-AimSection:CreateToggle({Name = "Silent Aimbot", CurrentValue = false, Callback = setAimbot})
-AimSection:CreateToggle({Name = "Trigger Bot", CurrentValue = false, Callback = setTriggerBot})
-AimSection:CreateSlider({Name = "Aim FOV", Range = {50, 500}, Default = 200, Callback = function(v) Config.AimFOV = v; fovCircle.Radius = v end})
-AimSection:CreateSlider({Name = "Aim Smoothness", Range = {0.01, 1}, Default = 0.1, Callback = function(v) Config.AimSmoothness = v end})
-AimSection:CreateToggle({Name = "Target Head", CurrentValue = true, Callback = function(v) Config.TargetHead = v end})
-AimSection:CreateToggle({Name = "Team Check", CurrentValue = false, Callback = function(v) Config.TeamCheck = v end})
-
--- Movement Tab
-local MovementTab = Window:CreateTab("Movement")
-local GeneralSection = MovementTab:CreateSection("Basic")
-GeneralSection:CreateSlider({Name = "Walk Speed", Range = {16, 300}, Default = 16, Callback = function(v) Config.WalkSpeed = v end})
-GeneralSection:CreateToggle({Name = "Infinite Jump", CurrentValue = false, Callback = function(v) Config.InfiniteJump = v end})
-
-local AirSection = MovementTab:CreateSection("Flight")
-AirSection:CreateSlider({Name = "Fly Speed", Range = {50, 500}, Default = 100, Callback = function(v) Config.FlySpeed = v end})
-AirSection:CreateToggle({Name = "Fly", CurrentValue = false, Callback = setFlying})
-AirSection:CreateToggle({Name = "Noclip", CurrentValue = false, Callback = setNoclip})
-AirSection:CreateToggle({Name = "Click Teleport", CurrentValue = false, Callback = setClickTeleport})
-
--- Visuals Tab
-local VisualsTab = Window:CreateTab("Visuals")
-VisualsTab:CreateSection("ESP")
-VisualsTab:CreateToggle({Name = "Player ESP + Health", CurrentValue = false, Callback = setESP})
-
--- Exploits Tab (previous features)
-local ExploitTab = Window:CreateTab("🧨 Server Exploits")
--- [Previous mass drop, screen deface, spam features here - unchanged]
-
--- MAIN LOOPS
-RunService.RenderStepped:Connect(function()
-    fovCircle.Position = Vector2.new(mouse.X, mouse.Y)
-    fovCircle.Visible = Config.Aimbot
-    
-    -- Enhanced ESP with health bars
-    if Config.ESP then
-        local cam = Workspace.CurrentCamera
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local rootPart = player.Character.HumanoidRootPart
-                local humanoid = player.Character:FindFirstChild("Humanoid")
-                local screenPos, onScreen = cam:WorldToScreenPoint(rootPart.Position)
-                
-                if onScreen and humanoid then
-                    if not espElements[player] then 
-                        espElements[player] = {Tracer = Drawing.new("Line"), Box = Drawing.new("Square")}
-                    end
-                    
-                    local distance = (cam.CFrame.Position - rootPart.Position).Magnitude
-                    local healthPercent = humanoid.Health / humanoid.MaxHealth
-                    
-                    -- Update ESP info
-                    espElements[player].Tracer.From = Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y)
-                    espElements[player].Tracer.To = Vector2.new(screenPos.X, screenPos.Y)
-                    espElements[player].Tracer.Color = Color3.fromHSV(healthPercent * 0.3, 1, 1)
-                    espElements[player].Tracer.Visible = true
-                    
-                    espElements[player].Box.Size = Vector2.new(2000/rootPart.DistanceFromCamera, 3000/rootPart.DistanceFromCamera)
-                    espElements[player].Box.Position = Vector2.new(screenPos.X - 1000/rootPart.DistanceFromCamera, screenPos.Y - 1500/rootPart.DistanceFromCamera)
-                    espElements[player].Box.Color = Color3.fromHSV(healthPercent * 0.3, 1, 1)
-                    espElements[player].Box.Visible = true
-                end
-            end
-        end
-    end
+-- // Main Feature Loops // --
+Connections.Aimbot = RunService.Heartbeat:Connect(function()
+	if AimbotEnabled and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		local closest, shortest = nil, 120
+		for _, player in pairs(Players:GetPlayers()) do
+			if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+				local dist = (localPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+				if dist < shortest then closest, shortest = player, dist end
+			end
+		end
+		if closest and closest.Character and closest.Character:FindFirstChild("Head") then
+			camera.CFrame = CFrame.lookAt(camera.CFrame.Position, closest.Character.Head.Position)
+		end
+	end
 end)
 
--- Keybinds
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Config.Keybinds.ToggleFly then setFlying(not Config.IsFlying) end
-    if input.KeyCode == Config.Keybinds.ToggleNoclip then setNoclip(not Config.Noclip) end
-    if input.KeyCode == Config.Keybinds.ToggleAimbot then setAimbot(not Config.Aimbot) end
+Connections.Godmode = RunService.Heartbeat:Connect(function()
+	if GodMode and localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
+		localPlayer.Character.Humanoid.MaxHealth = math.huge
+		localPlayer.Character.Humanoid.Health = math.huge
+	end
 end)
 
--- Init
-localPlayer.CharacterAdded:Connect(setupCharacter)
-if localPlayer.Character then setupCharacter(localPlayer.Character) end
+Connections.Fly = RunService.Heartbeat:Connect(function()
+	if FlyEnabled and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		local root = localPlayer.Character.HumanoidRootPart
+		if not root:FindFirstChild("FlyVelocity") then
+			local bv = Instance.new("BodyVelocity")
+			bv.Name = "FlyVelocity"
+			bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+			bv.Velocity = Vector3.new()
+			bv.Parent = root
+		end
+		local bv = root:FindFirstChild("FlyVelocity")
+		local moveVector = Vector3.new()
+		local cam = camera
+		
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVector = moveVector + cam.CFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVector = moveVector - cam.CFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVector = moveVector - cam.CFrame.RightVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVector = moveVector + cam.CFrame.RightVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVector = moveVector + Vector3.new(0, 1, 0) end
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVector = moveVector + Vector3.new(0, -1, 0) end
+		
+		bv.Velocity = moveVector.Unit * FlySpeed
+	end
+end)
 
--- Player list update for teleport (unchanged)
+Connections.Speed = RunService.Heartbeat:Connect(function()
+	if SpeedEnabled and localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
+		localPlayer.Character.Humanoid.WalkSpeed = 120
+	end
+end)
+
+Connections.Noclip = RunService.Stepped:Connect(function()
+	if NoclipEnabled and localPlayer.Character then
+		for _, part in pairs(localPlayer.Character:GetDescendants()) do
+			if part:IsA("BasePart") and part.CanCollide then
+				part.CanCollide = false
+			end
+		end
+	end
+end)
+
+-- // Character Respawn Handler // --
+localPlayer.CharacterAdded:Connect(function()
+	task.wait(1)
+	if GodMode and localPlayer.Character:FindFirstChild("Humanoid") then
+		localPlayer.Character.Humanoid.MaxHealth = math.huge
+		localPlayer.Character.Humanoid.Health = math.huge
+	end
+	if SpeedEnabled and localPlayer.Character:FindFirstChild("Humanoid") then
+		localPlayer.Character.Humanoid.WalkSpeed = 120
+	end
+end)
+
+-- // Toggle GUI // --
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then return end
+	if input.KeyCode == ToggleKey then
+		MainFrame.Visible = not MainFrame.Visible
+		if MainFrame.Visible then
+			TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 850, 0, 500)}):Play()
+		end
+	end
+end)
+
+-- // Window Dragging // --
+local dragging, dragStart, startPos
+MainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 and input.Target == MainFrame then
+		dragging = true
+		dragStart = input.Position
+		startPos = MainFrame.Position
+	end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+		local delta = input.Position - dragStart
+		MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+-- // Initialize // --
+MiddleLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvasSize)
+RightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvasSize)
+
+-- Activate first tab
+if Tabs[1] then
+	Tabs[1].Button.MouseButton1Click:Fire()
+end
+
+print("🟡 Nexus V Ultimate Loaded!")
+print("🎮 Press RIGHT CONTROL to toggle GUI")
+print("✅ Features: Aimbot, Godmode, Fly, ESP, Trolls, Server Crash & more!")
