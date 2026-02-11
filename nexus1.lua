@@ -431,6 +431,3 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-
-Rayfield:LoadConfiguration()
-Rayfield:Notify({Title = "RasclatV Loaded", Content = "Roku Logic Applied", Duration = 5})
