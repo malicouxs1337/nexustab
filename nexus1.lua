@@ -41,8 +41,6 @@ fovCircle.Thickness = 2
 fovCircle.Filled = false
 fovCircle.Transparency = 1
 
--- // UI Setup (Rayfield) \\ --
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- 1. Create Window with RasclatV Naming
 local Window = Rayfield:CreateWindow({
